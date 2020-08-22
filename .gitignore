@@ -1,7 +1,9 @@
 dataset/
+preprocessed/
 *.pth 
 *.zip
-
+*.pkl
+*.csv
 
 
 
