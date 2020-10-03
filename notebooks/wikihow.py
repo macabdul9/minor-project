@@ -1,14 +1,18 @@
-from torch.utils import data
-import pandas as pd
-import random
+from datasets import load_dataset
+from torch.utils.data import Dataset
+from transformers import (
+    AdamW,
+    T5ForConditionalGeneration,
+    T5Tokenizer,
+    get_linear_schedule_with_warmup
+)
 
 
-class AbstractDataset(data.Dataset):
-    def __init__(self, file_path, sample_size, tokenizer, type_path, num_samples, input_length, output_length, print_text=False):   
-              
-        self.dataset =  pd.read_csv(file_path, skiprows=lambda i: i>0 and random.random() > sample_size)
-        self.dataset = dataset.dropna()
-        
+class wikihow(Dataset):
+    def __init__(self, tokenizer, type_path, num_samples, input_length, output_length, print_text=False):         
+        self.dataset =  load_dataset('wikihow', 'all', data_dir='data/', split=type_path)
+        if num_samples:
+            self.dataset = self.dataset.select(list(range(0, num_samples)))
         self.input_length = input_length
         self.tokenizer = tokenizer
         self.output_length = output_length
@@ -18,9 +22,12 @@ class AbstractDataset(data.Dataset):
         return self.dataset.shape[0]
     
     def clean_text(self, text):
+        text = text.replace('Example of text:', '')
+        text = text.replace('Example of Summary:', '')
         text = text.replace('\n','')
         text = text.replace('``', '')
         text = text.replace('"', '')
+        
         return text
     
     
@@ -28,10 +35,12 @@ class AbstractDataset(data.Dataset):
         # Tokenize contexts and questions (as pairs of inputs)
         
         if self.print_text:
-            print("Input Text: ", self.clean_text(example_batch['abstract']))
+            print("Input Text: ", self.clean_text(example_batch['text']))
+#         input_ = self.clean_text(example_batch['text']) + " </s>"
+#         target_ = self.clean_text(example_batch['headline']) + " </s>"
         
-        input_ = self.clean_text(example_batch['abstract'])
-        target_ = self.clean_text(example_batch['title'])
+        input_ = self.clean_text(example_batch['text'])
+        target_ = self.clean_text(example_batch['headline'])
         
         source = self.tokenizer.batch_encode_plus([input_], max_length=self.input_length, 
                                                      padding='max_length', truncation=True, return_tensors="pt")
@@ -43,7 +52,7 @@ class AbstractDataset(data.Dataset):
         return source, targets
   
     def __getitem__(self, index):
-        source, targets = self.convert_to_features(self.dataset.iloc[index])
+        source, targets = self.convert_to_features(self.dataset[index])
         
         source_ids = source["input_ids"].squeeze()
         target_ids = targets["input_ids"].squeeze()
