@@ -3,7 +3,17 @@ preprocessed/
 *.pth 
 *.zip
 *.pkl
+*.bin
 *.csv
+*.txt
+
+notebooks/data/
+notebooks/wandb/
+notebooks/outputs/
+notebooks/PyRouge/
+notebooks/PyRouge-master/
+
+
 
 
 
